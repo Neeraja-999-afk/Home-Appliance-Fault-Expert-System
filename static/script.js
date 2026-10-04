@@ -3,9 +3,21 @@ const faultsBox = document.getElementById("faults");
 const help = document.getElementById("help");
 const result = document.getElementById("result");
 
+
+// ===============================
+// APPLIANCE SELECTION
+// ===============================
+
 applianceButtons.forEach((btn) => {
+
     btn.addEventListener("click", async () => {
-        applianceButtons.forEach((x) => x.classList.remove("active"));
+
+        // Remove active state from all appliances
+        applianceButtons.forEach((x) => {
+            x.classList.remove("active");
+        });
+
+        // Activate selected appliance
         btn.classList.add("active");
 
         const appliance = btn.dataset.a;
@@ -22,49 +34,60 @@ applianceButtons.forEach((btn) => {
         `;
 
         try {
+
             const response = await fetch(
                 `/faults/${encodeURIComponent(appliance)}`
             );
 
-            const data = await response.json();
-
             if (!response.ok) {
-                throw new Error("Could not load faults.");
+                throw new Error(
+                    `Unable to load faults. Server returned ${response.status}.`
+                );
             }
+
+            const data = await response.json();
 
             faultsBox.className = "faults";
             faultsBox.innerHTML = "";
 
             if (!data.faults || data.faults.length === 0) {
+
                 faultsBox.innerHTML = `
                     <div class="empty">
                         ⚠️
                         <strong>No faults found</strong>
-                        <span>No faults are available for this appliance.</span>
+                        <span>No rules are available for this appliance.</span>
                     </div>
                 `;
+
                 return;
             }
 
+
+            // Create fault buttons
             data.faults.forEach((fault) => {
-                const button = document.createElement("button");
 
-                button.className = "fault";
-                button.textContent = fault;
+                const faultButton = document.createElement("button");
 
-                button.addEventListener("click", () => {
+                faultButton.className = "fault";
+                faultButton.textContent = fault;
+
+                faultButton.addEventListener("click", () => {
+
                     document
                         .querySelectorAll(".fault")
                         .forEach((x) => x.classList.remove("active"));
 
-                    button.classList.add("active");
+                    faultButton.classList.add("active");
 
                     diagnose(appliance, fault);
                 });
 
-                faultsBox.appendChild(button);
+                faultsBox.appendChild(faultButton);
             });
 
+
+            // Update result area
             result.innerHTML = `
                 <div class="welcome">
                     🔎
@@ -78,6 +101,9 @@ applianceButtons.forEach((btn) => {
             `;
 
         } catch (error) {
+
+            console.error("Fault loading error:", error);
+
             faultsBox.innerHTML = `
                 <div class="empty">
                     ⚠️
@@ -87,8 +113,13 @@ applianceButtons.forEach((btn) => {
             `;
         }
     });
+
 });
 
+
+// ===============================
+// DIAGNOSIS
+// ===============================
 
 async function diagnose(appliance, fault) {
 
@@ -103,64 +134,157 @@ async function diagnose(appliance, fault) {
         </div>
     `;
 
+
     try {
+
         const response = await fetch("/diagnose", {
+
             method: "POST",
+
             headers: {
                 "Content-Type": "application/json"
             },
+
             body: JSON.stringify({
                 appliance: appliance,
                 fault: fault
             })
+
         });
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `Diagnosis request failed. Server returned ${response.status}.`
+            );
+
+        }
+
 
         const data = await response.json();
 
-        if (!response.ok || !data.success) {
+
+        if (!data.success) {
+
             throw new Error(
                 data.message || "Unable to diagnose the selected fault."
             );
+
         }
 
+
+        // Flask returns these fields directly
+        const possibleFault = data.possible_fault;
+        const solution = data.solution;
+        const rule = data.rule;
+
+
+        // Convert solution to array if necessary
+        let solutions = [];
+
+        if (Array.isArray(solution)) {
+            solutions = solution;
+        } else {
+            solutions = [solution];
+        }
+
+
+        // Create troubleshooting list
+        const solutionList = solutions
+            .map((item) => `<li>${item}</li>`)
+            .join("");
+
+
+        // Display diagnosis
         result.innerHTML = `
             <div class="box">
 
                 <div class="heading">
+
                     <small>
-                        DIAGNOSIS FOR ${data.appliance.toUpperCase()}
+                        DIAGNOSIS FOR ${escapeHtml(
+                            appliance.toUpperCase()
+                        )}
                     </small>
 
-                    <h3>${data.fault}</h3>
+                    <h3>
+                        ${escapeHtml(fault)}
+                    </h3>
+
                 </div>
+
 
                 <div class="content">
 
                     <strong>Possible fault:</strong>
-                    <p>${data.possible_fault}</p>
+
+                    <br>
+
+                    ${escapeHtml(possibleFault)}
+
 
                     <h4>🔧 Basic Troubleshooting</h4>
 
-                    <p>${data.solution}</p>
+                    <ul>
+                        ${solutionList}
+                    </ul>
+
 
                     <div class="rule">
+
                         <b>IF–THEN RULE USED</b>
+
                         <br>
-                        ${data.rule}
+
+                        ${escapeHtml(rule)}
+
                     </div>
 
                 </div>
+
             </div>
         `;
+
 
     } catch (error) {
 
+        console.error("Diagnosis error:", error);
+
         result.innerHTML = `
             <div class="welcome">
+
                 ⚠️
+
                 <h2>Unable to diagnose</h2>
-                <p>${error.message}</p>
+
+                <p>
+                    ${escapeHtml(
+                        error.message ||
+                        "An error occurred while diagnosing the fault."
+                    )}
+                </p>
+
             </div>
         `;
     }
+}
+
+
+// ===============================
+// HTML SAFETY HELPER
+// ===============================
+
+function escapeHtml(value) {
+
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
