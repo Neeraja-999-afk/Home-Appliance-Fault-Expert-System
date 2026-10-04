@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home Appliance Fault Expert System</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="bg-icons"><span>⚙</span><span>❄</span><span>⚡</span><span>⌁</span><span>▣</span><span>◉</span><span>♨</span></div>
+<div class="page">
+<header class="hero">
+  <div class="brand"><div class="logo">⚙</div><div>
+    <div class="eyebrow">ARTIFICIAL INTELLIGENCE • UNIT V MINI PROJECT</div>
+    <h1>Home Appliance Fault <span>Expert System</span></h1>
+    <p>Select an appliance, choose one of its related faults, and let the rule-based expert system provide a diagnosis and troubleshooting suggestion.</p>
+  </div></div>
+  <div class="rule-chip"><b>IF → THEN</b><small>Rule-Based AI</small></div>
+</header>
+<main class="workspace">
+<section class="card">
+  <div class="title"><b>01</b><div><h2>Select Appliance</h2><p>Choose the appliance you want to diagnose.</p></div></div>
+  <div class="appliance-grid" id="appliances">
+  {% for a in appliances %}<button class="appliance" data-a="{{ a }}"><span class="icon">{% if a=="Refrigerator" %}❄️{% elif a=="Washing Machine" %}🧺{% elif a=="Air Conditioner" %}❄{% elif a=="Microwave" %}▣{% elif a=="Television" %}▣{% elif a=="Fan" %}◉{% else %}♨️{% endif %}</span>{{ a }}</button>{% endfor %}
+  </div>
+</section>
+<section class="card">
+  <div class="title"><b>02</b><div><h2>Related Faults</h2><p id="help">Select an appliance to see only its faults.</p></div></div>
+  <div id="faults" class="faults"><div class="empty">🔍<strong>No appliance selected</strong><span>Select an appliance above.</span></div></div>
+</section>
+<section class="result-card">
+  <div class="result-top"><span class="bot">🤖</span><div><b>Expert System Result</b><small>Knowledge Base → Inference → Recommendation</small></div><em>● READY</em></div>
+  <div id="result" class="result"><div class="welcome">⚙️<h2>Ready to diagnose</h2><p>Select an appliance and one related fault. The corresponding IF–THEN rule will be applied here.</p></div></div>
+</section>
+</main>
+<footer><div><b>Home Appliance Fault Expert System</b><small>Educational Rule-Based AI Application</small></div><div class="flow">USER INPUT <b>→</b> KNOWLEDGE BASE <b>→</b> INFERENCE <b>→</b> RESULT</div></footer>
+</div>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body></html>
